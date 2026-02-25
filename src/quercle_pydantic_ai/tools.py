@@ -11,6 +11,7 @@ from quercle import (
     AsyncQuercleClient,
     tool_metadata,
 )
+from quercle.models import ExtractBodyFormat, RawFetchBodyFormat, RawSearchBodyFormat
 
 
 def quercle_search_tool(
@@ -118,7 +119,7 @@ def quercle_raw_fetch_tool(
 
     async def quercle_raw_fetch(
         url: str,
-        format: str | None = None,
+        format: RawFetchBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         nonlocal client
@@ -169,7 +170,7 @@ def quercle_raw_search_tool(
 
     async def quercle_raw_search(
         query: str,
-        format: str | None = None,
+        format: RawSearchBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         nonlocal client
@@ -221,7 +222,7 @@ def quercle_extract_tool(
     async def quercle_extract(
         url: str,
         query: str,
-        format: str | None = None,
+        format: ExtractBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         nonlocal client
@@ -306,7 +307,7 @@ def _build_tools_with_shared_client(
 
     async def _raw_fetch(
         url: str,
-        format: str | None = None,
+        format: RawFetchBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         result = (await _get_client().raw_fetch(
@@ -327,7 +328,7 @@ def _build_tools_with_shared_client(
 
     async def _raw_search(
         query: str,
-        format: str | None = None,
+        format: RawSearchBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         result = (await _get_client().raw_search(
@@ -349,7 +350,7 @@ def _build_tools_with_shared_client(
     async def _extract(
         url: str,
         query: str,
-        format: str | None = None,
+        format: ExtractBodyFormat | None = None,
         use_safeguard: bool | None = None,
     ) -> str:
         result = (await _get_client().extract(
