@@ -1,6 +1,6 @@
 """Tests for Quercle Pydantic AI tools."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic_ai.tools import Tool
@@ -44,7 +44,7 @@ class TestQuercleSearchTool:
         """Test that search tool executes correctly."""
         with patch("quercle_pydantic_ai.tools.AsyncQuercleClient") as mock_client_class:
             mock_client = AsyncMock()
-            mock_client.search.return_value = "AI answer with citations"
+            mock_client.search.return_value = MagicMock(result="AI answer with citations")
             mock_client_class.return_value = mock_client
 
             tool = quercle_search_tool(api_key="qk_test")
@@ -56,6 +56,7 @@ class TestQuercleSearchTool:
                 "What is Python?",
                 allowed_domains=None,
                 blocked_domains=None,
+                timeout=None,
             )
 
     @pytest.mark.asyncio
@@ -63,7 +64,7 @@ class TestQuercleSearchTool:
         """Test search with domain filtering."""
         with patch("quercle_pydantic_ai.tools.AsyncQuercleClient") as mock_client_class:
             mock_client = AsyncMock()
-            mock_client.search.return_value = "Filtered results"
+            mock_client.search.return_value = MagicMock(result="Filtered results")
             mock_client_class.return_value = mock_client
 
             tool = quercle_search_tool(
@@ -78,6 +79,7 @@ class TestQuercleSearchTool:
                 "TypeScript",
                 allowed_domains=["*.org", "*.edu"],
                 blocked_domains=["spam.com"],
+                timeout=None,
             )
 
 
@@ -112,7 +114,7 @@ class TestQuercleFetchTool:
         """Test that fetch tool executes correctly."""
         with patch("quercle_pydantic_ai.tools.AsyncQuercleClient") as mock_client_class:
             mock_client = AsyncMock()
-            mock_client.fetch.return_value = "Page summary content"
+            mock_client.fetch.return_value = MagicMock(result="Page summary content")
             mock_client_class.return_value = mock_client
 
             tool = quercle_fetch_tool(api_key="qk_test")
@@ -125,6 +127,7 @@ class TestQuercleFetchTool:
             mock_client.fetch.assert_called_once_with(
                 url="https://example.com",
                 prompt="Summarize this page",
+                timeout=None,
             )
 
 
@@ -135,14 +138,20 @@ class TestQuercleTools:
         """Test that function returns a list of Tool instances."""
         tools = quercle_tools(api_key="qk_test")
         assert isinstance(tools, list)
-        assert len(tools) == 2
+        assert len(tools) == 5
         assert all(isinstance(t, Tool) for t in tools)
 
-    def test_includes_search_and_fetch(self):
-        """Test that list includes both search and fetch tools."""
+    def test_includes_all_tools(self):
+        """Test that list includes all five tools."""
         tools = quercle_tools(api_key="qk_test")
         names = {t.name for t in tools}
-        assert names == {"quercle_search", "quercle_fetch"}
+        assert names == {
+            "quercle_search",
+            "quercle_fetch",
+            "quercle_raw_fetch",
+            "quercle_raw_search",
+            "quercle_extract",
+        }
 
 
 class TestQuercleToolset:
@@ -181,6 +190,9 @@ class TestQuercleToolset:
             api_key="qk_test",
             include_search=False,
             include_fetch=False,
+            include_raw_fetch=False,
+            include_raw_search=False,
+            include_extract=False,
         )
         assert len(toolset.tools) == 0
 
@@ -193,4 +205,4 @@ class TestQuercleToolset:
         )
         # Verify toolset was created (filters are applied at call time)
         assert toolset is not None
-        assert len(toolset.tools) == 2
+        assert len(toolset.tools) == 5
