@@ -424,7 +424,7 @@ class QuercleToolset(FunctionToolset):
 
     Example:
         >>> from pydantic_ai import Agent
-        >>> from pydantic_ai_quercle import QuercleToolset
+        >>> from quercle_pydantic_ai import QuercleToolset
         >>> toolset = QuercleToolset()
         >>> agent = Agent('openai:gpt-4o', toolsets=[toolset])
     """
