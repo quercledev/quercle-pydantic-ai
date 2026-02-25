@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "quercle-pydantic-ai"
-version = "1.0.0"
+version = "1.0.1"
 description = "Quercle web search and URL fetch tools for Pydantic AI agents"
 readme = "README.md"
 license = "MIT"
