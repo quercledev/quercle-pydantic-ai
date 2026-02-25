@@ -1,18 +1,24 @@
 # quercle-pydantic-ai
 
-Quercle web search and URL fetch tools for [Pydantic AI](https://ai.pydantic.dev/) agents.
+Quercle web search and fetch tools for [Pydantic AI](https://ai.pydantic.dev/).
 
 ## Installation
 
 ```bash
 uv add quercle-pydantic-ai
-```
-
-Or with pip:
-
-```bash
+# or
 pip install quercle-pydantic-ai
 ```
+
+## Setup
+
+Set your API key as an environment variable:
+
+```bash
+export QUERCLE_API_KEY=qk_...
+```
+
+Get your API key at [quercle.dev](https://quercle.dev).
 
 ## Quick Start
 
@@ -20,109 +26,57 @@ pip install quercle-pydantic-ai
 from pydantic_ai import Agent
 from quercle_pydantic_ai import quercle_tools
 
-# Create an agent with Quercle tools
 agent = Agent(
-    'openai:gpt-4o',
+    "openai:gpt-4o",
     tools=quercle_tools(),
+    system_prompt="You are a helpful research assistant.",
 )
 
-# Run the agent
-result = agent.run_sync("Search for the latest Python 3.13 features")
-print(result.data)
+result = agent.run_sync("Search for the latest news about AI agents")
+print(result.output)
 ```
 
-## Configuration
+`quercle_tools()` returns all 5 tools: search, fetch, raw search, raw fetch, and extract.
 
-### API Key
+## Direct Tool Usage
 
-Set your Quercle API key via environment variable:
-
-```bash
-export QUERCLE_API_KEY=qk_your_api_key
-```
-
-Or pass it directly:
+The tools are async (Pydantic AI tools are async by design). For direct usage, use the underlying SDK client:
 
 ```python
-from quercle_pydantic_ai import quercle_tools
+import asyncio
+from quercle import AsyncQuercleClient
 
-tools = quercle_tools(api_key="qk_your_api_key")
+async def main():
+    client = AsyncQuercleClient()
+
+    # Search
+    result = await client.search("best practices for building AI agents")
+    print(result.result)
+
+    # Search with domain filtering
+    result = await client.search(
+        "Python documentation",
+        allowed_domains=["docs.python.org"],
+    )
+    print(result.result)
+
+    # Fetch and analyze a page
+    result = await client.fetch(
+        "https://en.wikipedia.org/wiki/TypeScript",
+        "Summarize the key features of TypeScript",
+    )
+    print(result.result)
+
+asyncio.run(main())
 ```
 
-Get your API key at [quercle.dev](https://quercle.dev).
-
-## Usage
-
-### Individual Tools
-
-Use search or fetch tools separately:
+### Custom API Key
 
 ```python
-from pydantic_ai import Agent
-from quercle_pydantic_ai import quercle_search_tool, quercle_fetch_tool
-
-# Search-only agent
-search_agent = Agent(
-    'openai:gpt-4o',
-    tools=[quercle_search_tool()],
-)
-
-# Fetch-only agent
-fetch_agent = Agent(
-    'openai:gpt-4o',
-    tools=[quercle_fetch_tool()],
-)
+tools = quercle_tools(api_key="qk_...")
 ```
 
-### Domain Filtering
-
-Restrict search to specific domains:
-
-```python
-from quercle_pydantic_ai import quercle_search_tool
-
-# Only search official documentation sites
-tool = quercle_search_tool(
-    allowed_domains=["*.python.org", "docs.*.dev"],
-)
-
-# Exclude certain domains
-tool = quercle_search_tool(
-    blocked_domains=["reddit.com", "*.social"],
-)
-```
-
-### QuercleToolset
-
-Use the toolset for composition with other Pydantic AI toolsets:
-
-```python
-from pydantic_ai import Agent
-from pydantic_ai.toolsets import CombinedToolset
-from quercle_pydantic_ai import QuercleToolset
-
-# Create a Quercle toolset
-quercle = QuercleToolset(
-    search_allowed_domains=["*.org", "*.edu"],
-)
-
-# Combine with other toolsets
-combined = CombinedToolset([quercle, other_toolset])
-
-agent = Agent('openai:gpt-4o', toolsets=[combined])
-```
-
-Configure which tools to include:
-
-```python
-# Search only
-toolset = QuercleToolset(include_fetch=False)
-
-# Fetch only
-toolset = QuercleToolset(include_search=False)
-```
-
-## Examples
+## Agentic Usage
 
 ### Research Agent
 
@@ -131,109 +85,115 @@ from pydantic_ai import Agent
 from quercle_pydantic_ai import quercle_tools
 
 agent = Agent(
-    'openai:gpt-4o',
+    "anthropic:claude-sonnet-4-20250514",
     tools=quercle_tools(),
-    system_prompt="""You are a research assistant. Use web search to find
-    accurate, up-to-date information. Always cite your sources.""",
+    system_prompt="You are a research assistant. Search the web to find "
+    "accurate, up-to-date information. Always cite your sources.",
 )
 
-result = agent.run_sync(
-    "What are the key differences between Python 3.12 and 3.13?"
-)
-print(result.data)
+result = agent.run_sync("What are the latest developments in WebAssembly?")
+print(result.output)
 ```
 
-### Web Analyzer Agent
-
-```python
-from pydantic_ai import Agent
-from quercle_pydantic_ai import quercle_fetch_tool
-
-agent = Agent(
-    'openai:gpt-4o',
-    tools=[quercle_fetch_tool()],
-    system_prompt="""You analyze web pages and extract key information.
-    When given a URL, fetch it and provide a structured summary.""",
-)
-
-result = agent.run_sync(
-    "Analyze the documentation at https://ai.pydantic.dev/tools/"
-)
-print(result.data)
-```
-
-### Async Usage
+### Async Agent
 
 ```python
 import asyncio
 from pydantic_ai import Agent
 from quercle_pydantic_ai import quercle_tools
 
-agent = Agent('openai:gpt-4o', tools=quercle_tools())
+agent = Agent("openai:gpt-4o", tools=quercle_tools())
 
 async def main():
-    result = await agent.run("Search for async Python best practices")
-    print(result.data)
+    result = await agent.run("Search for trending AI papers this week")
+    print(result.output)
 
 asyncio.run(main())
 ```
 
+### Streaming
+
+```python
+import asyncio
+from pydantic_ai import Agent
+from quercle_pydantic_ai import quercle_tools
+
+agent = Agent("openai:gpt-4o", tools=quercle_tools())
+
+async def main():
+    async with agent.run_stream("Summarize the latest AI news") as response:
+        async for text in response.stream_text():
+            print(text, end="", flush=True)
+
+asyncio.run(main())
+```
+
+### Individual Tools
+
+```python
+from quercle_pydantic_ai import (
+    quercle_search_tool,
+    quercle_fetch_tool,
+    quercle_raw_search_tool,
+    quercle_raw_fetch_tool,
+    quercle_extract_tool,
+)
+
+# Use only search
+agent = Agent("openai:gpt-4o", tools=[quercle_search_tool()])
+
+# Use only fetch
+agent = Agent("openai:gpt-4o", tools=[quercle_fetch_tool()])
+
+# Combine specific tools
+agent = Agent("openai:gpt-4o", tools=[
+    quercle_search_tool(),
+    quercle_raw_fetch_tool(),
+    quercle_extract_tool(),
+])
+```
+
+### With QuercleToolset
+
+```python
+from pydantic_ai import Agent
+from quercle_pydantic_ai import QuercleToolset
+
+# All 5 tools with domain filtering
+toolset = QuercleToolset(
+    search_allowed_domains=["docs.python.org", "realpython.com"],
+)
+
+# Selectively include tools
+toolset = QuercleToolset(
+    include_raw_fetch=False,
+    include_raw_search=False,
+    include_extract=False,
+)
+
+agent = Agent("openai:gpt-4o", toolsets=[toolset])
+```
+
+## Configuration
+
+| Parameter | Default | Description |
+|---|---|---|
+| `api_key` | `QUERCLE_API_KEY` env var | Your Quercle API key |
+| `timeout` | `None` | Request timeout in seconds |
+| `allowed_domains` | `None` | Restrict search to these domains |
+| `blocked_domains` | `None` | Exclude these domains from search |
+
 ## API Reference
 
-### Factory Functions
-
-#### `quercle_search_tool()`
-
-Creates a web search tool.
-
-```python
-def quercle_search_tool(
-    api_key: str | None = None,
-    allowed_domains: list[str] | None = None,
-    blocked_domains: list[str] | None = None,
-    timeout: float | None = None,
-) -> Tool[Any]
-```
-
-#### `quercle_fetch_tool()`
-
-Creates a URL fetch tool.
-
-```python
-def quercle_fetch_tool(
-    api_key: str | None = None,
-    timeout: float | None = None,
-) -> Tool[Any]
-```
-
-#### `quercle_tools()`
-
-Creates both search and fetch tools.
-
-```python
-def quercle_tools(
-    api_key: str | None = None,
-    timeout: float | None = None,
-) -> list[Tool[Any]]
-```
-
-### QuercleToolset
-
-A composable toolset for use with Pydantic AI's toolset system.
-
-```python
-class QuercleToolset(FunctionToolset):
-    def __init__(
-        self,
-        api_key: str | None = None,
-        timeout: float | None = None,
-        *,
-        include_search: bool = True,
-        include_fetch: bool = True,
-        search_allowed_domains: list[str] | None = None,
-        search_blocked_domains: list[str] | None = None,
-    )
-```
+| Export | Description |
+|---|---|
+| `quercle_search_tool(...)` | AI-synthesized web search with citations |
+| `quercle_fetch_tool(...)` | Fetch a URL and analyze its content with AI |
+| `quercle_raw_search_tool(...)` | Raw web search results (markdown or JSON) |
+| `quercle_raw_fetch_tool(...)` | Raw URL content (markdown or HTML) |
+| `quercle_extract_tool(...)` | Extract content chunks relevant to a query from a URL |
+| `quercle_tools(...)` | Returns all 5 tools as a list |
+| `QuercleToolset(...)` | Composable `FunctionToolset` for use with `toolsets=` |
 
 ## License
 
